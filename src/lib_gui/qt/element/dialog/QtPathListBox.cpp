@@ -11,9 +11,9 @@
 QtPathListBox::QtPathListBox(QWidget* parent, const QString& listName, SelectionPolicyType selectionPolicy)
 	: QtListBox(parent, listName), m_selectionPolicy(selectionPolicy)
 {
-	QLabel* dropInfoText = new QLabel("Drop Files & Folders");
+	QLabel* dropInfoText = new QLabel(QStringLiteral("Drop Files & Folders"));
 	dropInfoText->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-	dropInfoText->setObjectName("dropInfo");
+	dropInfoText->setObjectName(QStringLiteral("dropInfo"));
 	dropInfoText->setAlignment(Qt::AlignRight);
 
 	addWidgetToBar(dropInfoText);
@@ -63,7 +63,7 @@ void QtPathListBox::setPaths(const std::vector<FilePath>& list, bool readOnly)
 
 void QtPathListBox::addPaths(const std::vector<FilePath>& list, bool readOnly)
 {
-	for (FilePath path: list)
+	for (const FilePath& path: list)
 	{
 		QtListBoxItem* item = addListBoxItemWithText(QString::fromStdWString(path.wstr()));
 		item->setReadOnly(readOnly);

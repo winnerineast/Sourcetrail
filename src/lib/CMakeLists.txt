@@ -305,6 +305,8 @@ add_files(
 	data/GroupType.h
 	data/HierarchyCache.cpp
 	data/HierarchyCache.h
+	data/NodeKind.cpp
+	data/NodeKind.h
 	data/NodeType.cpp
 	data/NodeType.h
 	data/NodeTypeSet.cpp
@@ -472,6 +474,12 @@ add_files(
 	utility/messaging/type/error/MessageErrorsHelpMessage.h
 	utility/messaging/type/error/MessageShowError.h
 
+	utility/messaging/type/focus/MessageFocusChanged.h
+	utility/messaging/type/focus/MessageFocusedSearchView.h
+	utility/messaging/type/focus/MessageFocusIn.h
+	utility/messaging/type/focus/MessageFocusOut.h
+	utility/messaging/type/focus/MessageFocusView.h
+
 	utility/messaging/type/graph/MessageActivateEdge.h
 	utility/messaging/type/graph/MessageActivateNodes.h
 	utility/messaging/type/graph/MessageActivateTrailEdge.h
@@ -511,8 +519,6 @@ add_files(
 	utility/messaging/type/MessageClearStatusView.h
 	utility/messaging/type/MessageCloseProject.h
 	utility/messaging/type/MessageFlushUpdates.h
-	utility/messaging/type/MessageFocusIn.h
-	utility/messaging/type/MessageFocusOut.h
 	utility/messaging/type/MessageLoadProject.h
 	utility/messaging/type/MessageLogFilterChanged.h
 	utility/messaging/type/MessageProjectEdit.h
@@ -520,6 +526,7 @@ add_files(
 	utility/messaging/type/MessageQuitApplication.h
 	utility/messaging/type/MessageRefresh.h
 	utility/messaging/type/MessageRefreshUI.h
+	utility/messaging/type/MessageRefreshUIState.h
 	utility/messaging/type/MessageResetZoom.h
 	utility/messaging/type/MessageShowStatus.h
 	utility/messaging/type/MessageStatus.cpp
@@ -528,6 +535,7 @@ add_files(
 	utility/messaging/type/MessageSwitchColorScheme.h
 	utility/messaging/type/MessageTooltipHide.h
 	utility/messaging/type/MessageTooltipShow.h
+	utility/messaging/type/MessageWindowChanged.h
 	utility/messaging/type/MessageWindowClosed.h
 	utility/messaging/type/MessageWindowFocus.h
 	utility/messaging/type/MessageZoom.h
@@ -645,7 +653,6 @@ if (BUILD_CXX_LANGUAGE_PACKAGE)
 		settings/source_group/type/SourceGroupSettingsCppEmpty.h
 		settings/source_group/type/SourceGroupSettingsCustomCommand.h
 		settings/source_group/type/SourceGroupSettingsCxxCdb.h
-		settings/source_group/type/SourceGroupSettingsCxxCdbVs.h
 		settings/source_group/type/SourceGroupSettingsCxxCodeblocks.h
 	)
 endif()

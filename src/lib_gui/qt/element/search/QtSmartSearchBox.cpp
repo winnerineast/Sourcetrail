@@ -10,6 +10,7 @@
 
 #include "ColorScheme.h"
 #include "GraphViewStyle.h"
+#include "MessageFocusedSearchView.h"
 #include "NodeTypeSet.h"
 #include "utility.h"
 #include "utilityString.h"
@@ -78,12 +79,12 @@ QtSmartSearchBox::QtSmartSearchBox(const QString& placeholder, bool supportsFull
 	, m_mousePressed(false)
 	, m_ignoreNextMousePress(false)
 {
-	setObjectName("search_box");
+	setObjectName(QStringLiteral("search_box"));
 	setAttribute(Qt::WA_MacShowFocusRect, 0);	 // remove blue focus box on Mac
 
 	m_highlightRect = new QWidget(this);
 	m_highlightRect->setGeometry(0, 0, 0, 0);
-	m_highlightRect->setObjectName("search_box_highlight");
+	m_highlightRect->setObjectName(QStringLiteral("search_box_highlight"));
 
 	connect(this, &QtSmartSearchBox::textEdited, this, &QtSmartSearchBox::onTextEdited);
 	connect(this, &QtSmartSearchBox::textChanged, this, &QtSmartSearchBox::onTextChanged);
@@ -224,6 +225,7 @@ void QtSmartSearchBox::resizeEvent(QResizeEvent* event)
 void QtSmartSearchBox::focusInEvent(QFocusEvent* event)
 {
 	QLineEdit::focusInEvent(event);
+	MessageFocusedSearchView(true).dispatch();
 
 	if (event->reason() != Qt::MouseFocusReason && event->reason() != Qt::ShortcutFocusReason)
 	{
@@ -232,7 +234,7 @@ void QtSmartSearchBox::focusInEvent(QFocusEvent* event)
 
 	if (text().size() == 1 && text().startsWith(SearchMatch::FULLTEXT_SEARCH_CHARACTER))
 	{
-		setEditText("");
+		setEditText(QLatin1String(""));
 	}
 	else
 	{
@@ -255,6 +257,12 @@ void QtSmartSearchBox::focusInEvent(QFocusEvent* event)
 	{
 		m_ignoreNextMousePress = true;
 	}
+}
+
+void QtSmartSearchBox::focusOutEvent(QFocusEvent* event)
+{
+	QLineEdit::focusOutEvent(event);
+	MessageFocusedSearchView(false).dispatch();
 }
 
 void QtSmartSearchBox::keyPressEvent(QKeyEvent* event)
@@ -340,7 +348,7 @@ void QtSmartSearchBox::keyPressEvent(QKeyEvent* event)
 			setEditText(QString::fromStdString(str));
 			if (size)
 			{
-				setCursorPosition(size);
+				setCursorPosition(static_cast<int>(size));
 			}
 
 			requestAutoCompletions();
@@ -437,7 +445,7 @@ void QtSmartSearchBox::keyPressEvent(QKeyEvent* event)
 		if (m_cursorIndex < m_elements.size())
 		{
 			editTextToElement();
-			moveCursorTo(m_elements.size());
+			moveCursorTo(static_cast<int>(m_elements.size()));
 			return;
 		}
 	}
@@ -555,7 +563,7 @@ void QtSmartSearchBox::mouseReleaseEvent(QMouseEvent* event)
 		int dist = m_elements[i]->x() + m_elements[i]->width() - event->x();
 		if (abs(dist) < abs(minDist))
 		{
-			pos = i + 1;
+			pos = static_cast<int>(i) + 1;
 			minDist = dist;
 		}
 	}
@@ -565,7 +573,7 @@ void QtSmartSearchBox::mouseReleaseEvent(QMouseEvent* event)
 
 	if (pos - m_cursorIndex != 0)
 	{
-		moveCursor(pos - m_cursorIndex);
+		moveCursor(static_cast<int>(pos - m_cursorIndex));
 	}
 	else if (hasSelected)
 	{
@@ -707,7 +715,7 @@ void QtSmartSearchBox::onElementSelected(QtSearchElement* element)
 
 void QtSmartSearchBox::moveCursor(int offset)
 {
-	moveCursorTo(m_cursorIndex + offset);
+	moveCursorTo(static_cast<int>(m_cursorIndex + offset));
 }
 
 void QtSmartSearchBox::moveCursorTo(int target)
@@ -788,7 +796,7 @@ bool QtSmartSearchBox::editTextToElement()
 
 SearchMatch QtSmartSearchBox::editElement(QtSearchElement* element)
 {
-	for (int i = m_elements.size() - 1; i >= 0; i--)
+	for (int i = static_cast<int>(m_elements.size() - 1); i >= 0; i--)
 	{
 		if (m_elements[i] == element)
 		{
@@ -939,7 +947,7 @@ void QtSmartSearchBox::layoutElements()
 	{
 		QtSearchElement* button = m_elements[i];
 		QSize size = button->minimumSizeHint();
-		int y = (rect().height() - size.height()) / 2.0;
+		const int y = static_cast<int>((rect().height() - size.height()) / 2.0);
 		button->setGeometry(elementX[i] + offsetX, y, size.width(), size.height());
 	}
 
@@ -1044,13 +1052,13 @@ void QtSmartSearchBox::updatePlaceholder()
 	}
 	else
 	{
-		setPlaceholderText("");
+		setPlaceholderText(QLatin1String(""));
 	}
 }
 
 void QtSmartSearchBox::clearLineEdit()
 {
-	setEditText("");
+	setEditText(QLatin1String(""));
 	hideAutoCompletions();
 }
 

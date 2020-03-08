@@ -37,20 +37,20 @@ void QtUpdateChecker::check(bool force, std::function<void(Result)> callback)
 	appSettings->setUpdateDownloadUrl("");
 	appSettings->save();
 
-	QString urlString = "https://www.sourcetrail.com/api/v2/versions/latest";
+	std::string urlString = "https://www.sourcetrail.com/api/v2/versions/latest";
 
 	// OS
 	std::string osString = utility::getOsTypeString();
-	urlString += ("?os=" + osString).c_str();
+	urlString += "?os=" + osString;
 
 	// architecture
 	std::string platformString =
 		(utility::getApplicationArchitectureType() == APPLICATION_ARCHITECTURE_X86_64 ? "64" : "32");
-	urlString += ("&platform=" + platformString + "bit").c_str();
+	urlString += "&platform=" + platformString + "bit";
 
 	// version
 	// Version::setApplicationVersion(Version::fromString("2017.3.48")); // for debugging
-	urlString += ("&version=" + Version::getApplicationVersion().toDisplayString()).c_str();
+	urlString += "&version=" + Version::getApplicationVersion().toDisplayString();
 
 	// license
 	urlString += "&license=free";	 // options: test, private, commercial
@@ -64,12 +64,12 @@ void QtUpdateChecker::check(bool force, std::function<void(Result)> callback)
 		appSettings->save();
 	}
 
-	urlString += ("&token=" + token).c_str();
+	urlString += "&token=" + token;
 
 	// send request
 	QtRequest* request = new QtRequest();
 	QObject::connect(
-		request, &QtRequest::receivedData, [force, callback, request](QByteArray bytes) {
+		request, &QtRequest::receivedData, [force, callback, request](const QByteArray& bytes) {
 			Result result;
 
 			ApplicationSettings* appSettings = ApplicationSettings::getInstance().get();
@@ -87,7 +87,7 @@ void QtUpdateChecker::check(bool force, std::function<void(Result)> callback)
 					break;
 				}
 
-				QString news = doc.object().find("news")->toString();
+				QString news = doc.object().find(QStringLiteral("news"))->toString();
 				if (news.toStdString() != appSettings->getUpdateNews())
 				{
 					appSettings->setUpdateNews(news.toStdString());
@@ -95,8 +95,8 @@ void QtUpdateChecker::check(bool force, std::function<void(Result)> callback)
 				}
 
 
-				QString version = doc.object().find("version")->toString();
-				QString url = doc.object().find("url")->toString();
+				QString version = doc.object().find(QStringLiteral("version"))->toString();
+				QString url = doc.object().find(QStringLiteral("url"))->toString();
 
 				Version updateVersion = Version::fromString(version.toStdString());
 				if (!updateVersion.isValid())
@@ -126,13 +126,15 @@ void QtUpdateChecker::check(bool force, std::function<void(Result)> callback)
 					}
 
 					QMessageBox msgBox;
-					msgBox.setText("Update Check");
+					msgBox.setText(QStringLiteral("Update Check"));
 					msgBox.setInformativeText(
 						"Sourcetrail " + version + " is available for download: <a href=\"" + url +
 						"\">" + url + "</a>");
-					msgBox.addButton("Close", QMessageBox::ButtonRole::NoRole);
-					msgBox.addButton("Skip this Version", QMessageBox::ButtonRole::NoRole);
-					QPushButton* but = msgBox.addButton("Download", QMessageBox::ButtonRole::YesRole);
+					msgBox.addButton(QStringLiteral("Close"), QMessageBox::ButtonRole::NoRole);
+					msgBox.addButton(
+						QStringLiteral("Skip this Version"), QMessageBox::ButtonRole::NoRole);
+					QPushButton* but = msgBox.addButton(
+						QStringLiteral("Download"), QMessageBox::ButtonRole::YesRole);
 					msgBox.setDefaultButton(but);
 
 					int val = msgBox.exec();
@@ -167,7 +169,7 @@ void QtUpdateChecker::check(bool force, std::function<void(Result)> callback)
 			callback(result);
 		});
 
-	request->sendRequest(urlString);
+	request->sendRequest(QString::fromStdString(urlString));
 	MessageStatus(L"Checking for new version", false, true).dispatch();
 }
 

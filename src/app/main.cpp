@@ -61,8 +61,6 @@ void setupLogging()
 	logManager->addLogger(consoleLogger);
 
 	std::shared_ptr<FileLogger> fileLogger = std::make_shared<FileLogger>();
-	fileLogger->setLogDirectory(UserPaths::getLogPath().getAbsolute());
-	fileLogger->setFileName(FileLogger::generateDatedFileName(L"log"));
 	fileLogger->setLogLevel(Logger::LOG_ALL);
 	fileLogger->deleteLogFiles(FileLogger::generateDatedFileName(L"log", L"", -30));
 	logManager->addLogger(fileLogger);
@@ -95,14 +93,17 @@ void addLanguagePackages()
 
 int main(int argc, char *argv[])
 {
-	QCoreApplication::addLibraryPath(".");
+	QCoreApplication::addLibraryPath(QStringLiteral("."));
 
+#pragma warning(push)
+#pragma warning(disable : 4996)
 	if (utility::getOsType() == OS_LINUX && std::getenv("SOURCETRAIL_VIA_SCRIPT") == nullptr)
 	{
 		std::cout << "ERROR: Please run Sourcetrail via the Sourcetrail.sh script!" << std::endl;
 	}
+#pragma warning(pop)
 
-	QApplication::setApplicationName("Sourcetrail");
+	QApplication::setApplicationName(QStringLiteral("Sourcetrail"));
 
 	if (utility::getOsType() != OS_LINUX)
 	{

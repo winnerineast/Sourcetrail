@@ -30,7 +30,6 @@ QtPreferencesWindow::QtPreferencesWindow(QWidget* parent): QtProjectWizardWindow
 
 
 	QtProjectWizardContentGroup* summary = new QtProjectWizardContentGroup(this);
-	summary->setIsForm(true);
 	summary->addContent(new QtProjectWizardContentPreferences(this));
 
 #if BUILD_CXX_LANGUAGE_PACKAGE
@@ -43,7 +42,7 @@ QtPreferencesWindow::QtPreferencesWindow(QWidget* parent): QtProjectWizardWindow
 
 	setPreferredSize(QSize(750, 500));
 	setContent(summary);
-	setScrollAble(content()->isScrollAble());
+	setScrollAble(true);
 }
 
 QtPreferencesWindow::~QtPreferencesWindow() {}
@@ -52,8 +51,8 @@ void QtPreferencesWindow::windowReady()
 {
 	QtProjectWizardWindow::windowReady();
 
-	updateTitle("PREFERENCES");
-	updateNextButton("Save");
+	updateTitle(QStringLiteral("PREFERENCES"));
+	updateNextButton(QStringLiteral("Save"));
 	setPreviousVisible(false);
 
 	loadContent();

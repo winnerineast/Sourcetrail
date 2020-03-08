@@ -3,11 +3,10 @@
 
 #include <QWidget>
 
+#include "CodeFocusHandler.h"
 #include "ErrorInfo.h"
 #include "LocationType.h"
-#include "MessageIndexingFinished.h"
 #include "MessageListener.h"
-#include "MessageSwitchColorScheme.h"
 #include "MessageWindowFocus.h"
 #include "QtCodeFileList.h"
 #include "QtCodeFileSingle.h"
@@ -21,8 +20,7 @@ class SourceLocationFile;
 
 class QtCodeNavigator
 	: public QWidget
-	, public MessageListener<MessageIndexingFinished>
-	, public MessageListener<MessageSwitchColorScheme>
+	, public CodeFocusHandler
 	, public MessageListener<MessageWindowFocus>
 {
 	Q_OBJECT
@@ -73,8 +71,8 @@ public:
 	const std::set<Id>& getActiveLocalTokenIds() const;
 	void setActiveLocalTokenIds(const std::vector<Id>& activeLocalTokenIds, LocationType locationType);
 
-	const std::set<Id>& getFocusedTokenIds() const;
-	void setFocusedTokenIds(const std::vector<Id>& focusedTokenIds);
+	const std::set<Id>& getCoFocusedTokenIds() const;
+	void setCoFocusedTokenIds(const std::vector<Id>& coFocusedTokenIds);
 
 	std::wstring getErrorMessageForId(Id errorId) const;
 	void setErrorInfos(const std::vector<ErrorInfo>& errorInfos);
@@ -85,10 +83,13 @@ public:
 	bool isInListMode() const;
 	bool hasSingleFileCached(const FilePath& filePath) const;
 
-	void focusTokenIds(const std::vector<Id>& focusedTokenIds);
-	void defocusTokenIds();
+	void coFocusTokenIds(const std::vector<Id>& coFocusedTokenIds);
+	void deCoFocusTokenIds();
 
-	void updateFiles();
+	void setNavigationFocus(bool focus);
+	void focusInitialLocation(Id locationId);
+
+	void updateFiles() override;
 
 	void refreshStyle();
 
@@ -98,15 +99,26 @@ public:
 	bool hasScreenMatches() const;
 	void clearScreenMatches();
 
-	void scrollTo(const CodeScrollParams& params, bool animated);
+	void scrollTo(const CodeScrollParams& params, bool animated, bool focusTarget);
+	void scrollToFocus();
 
 public slots:
 	void scrolled(int value);
 
+signals:
+	void focusIn();
+	void focusOut();
+
 protected:
 	void showEvent(QShowEvent* event) override;
+	void keyPressEvent(QKeyEvent* event) override;
+
+	void focusInEvent(QFocusEvent* event) override;
+	void focusOutEvent(QFocusEvent* event) override;
 
 private slots:
+	void focusChanged(QWidget* from, QWidget* to);
+
 	void previousReference();
 	void nextReference();
 
@@ -117,8 +129,6 @@ private slots:
 	void setModeSingle();
 
 private:
-	void handleMessage(MessageIndexingFinished* message) override;
-	void handleMessage(MessageSwitchColorScheme* message) override;
 	void handleMessage(MessageWindowFocus* message) override;
 
 	QtThreadedLambdaFunctor m_onQtThread;
@@ -138,8 +148,11 @@ private:
 
 	std::set<Id> m_activeTokenIds;
 	std::set<Id> m_activeLocalTokenIds;
-	std::set<Id> m_focusedTokenIds;
+	std::set<Id> m_coFocusedTokenIds;
+
 	std::map<Id, ErrorInfo> m_errorInfos;
+
+	QWidget* m_focusIndicator;
 
 	QtSearchBarButton* m_prevReferenceButton;
 	QtSearchBarButton* m_nextReferenceButton;

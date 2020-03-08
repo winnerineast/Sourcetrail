@@ -27,28 +27,31 @@ public:
 	void clear() override;
 
 	void showSnippets(
-		const std::vector<CodeFileParams> files,
-		const CodeParams params,
-		const CodeScrollParams scrollParams) override;
+		const std::vector<CodeFileParams>& files,
+		const CodeParams& params,
+		const CodeScrollParams& scrollParams) override;
 
 	void showSingleFile(
-		const CodeFileParams file,
-		const CodeParams params,
-		const CodeScrollParams scrollParams) override;
+		const CodeFileParams& file,
+		const CodeParams& params,
+		const CodeScrollParams& scrollParams) override;
 
-	void updateSourceLocations(const std::vector<CodeFileParams> files) override;
+	void updateSourceLocations(const std::vector<CodeFileParams>& files) override;
 
-	void scrollTo(const CodeScrollParams params, bool animated) override;
+	void scrollTo(const CodeScrollParams& params, bool animated) override;
 
 	bool showsErrors() const override;
 
-	void focusTokenIds(const std::vector<Id>& focusedTokenIds) override;
-	void defocusTokenIds() override;
+	void coFocusTokenIds(const std::vector<Id>& coFocusedTokenIds) override;
+	void deCoFocusTokenIds() override;
 
 	bool isInListMode() const override;
 	void setMode(bool listMode) override;
 
 	bool hasSingleFileCached(const FilePath& filePath) const override;
+
+	void setNavigationFocus(bool focus) override;
+	bool hasNavigationFocus() const override;
 
 private:
 	void setNavigationState(const CodeParams& params);
@@ -59,6 +62,8 @@ private:
 	QtThreadedLambdaFunctor m_onQtThread;
 
 	QtCodeNavigator* m_widget;
+
+	bool m_hasFocus = false;
 };
 
 #endif	  // QT_CODE_VIEW_H

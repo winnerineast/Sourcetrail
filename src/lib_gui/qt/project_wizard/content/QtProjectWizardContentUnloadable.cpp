@@ -1,14 +1,6 @@
 #include "QtProjectWizardContentUnloadable.h"
 
-#include <QCheckBox>
-#include <QLineEdit>
-#include <QMessageBox>
-#include <boost/filesystem/path.hpp>
-
-#include "FileSystem.h"
-#include "ProjectSettings.h"
 #include "SourceGroupSettingsUnloadable.h"
-#include "SqliteIndexStorage.h"
 
 QtProjectWizardContentUnloadable::QtProjectWizardContentUnloadable(
 	std::shared_ptr<SourceGroupSettingsUnloadable> settings, QtProjectWizardWindow* window)
@@ -32,7 +24,7 @@ void QtProjectWizardContentUnloadable::populate(QGridLayout* layout, int& row)
 	QLabel* infoLabel = new QLabel(QString::fromStdString(
 		"<p>The type \"" + m_settings->getTypeString() +
 		"\" of the selected Source Group is not supportetd by this version of Sourcetrail.</p>"));
-	infoLabel->setObjectName("info");
+	infoLabel->setObjectName(QStringLiteral("info"));
 	infoLabel->setWordWrap(true);
 	layoutHorz->addWidget(infoLabel);
 

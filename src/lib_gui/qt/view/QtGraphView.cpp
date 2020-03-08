@@ -41,6 +41,7 @@
 
 QtGraphView::QtGraphView(ViewLayout* viewLayout)
 	: GraphView(viewLayout)
+	, m_focusHandler(this)
 	, m_centerActiveNode(false)
 	, m_scrollToTop(false)
 	, m_restoreScroll(false)
@@ -56,7 +57,7 @@ QtGraphView::QtGraphView(ViewLayout* viewLayout)
 	widget->setLayout(layout);
 
 	QGraphicsScene* scene = new QGraphicsScene(widget);
-	QtGraphicsView* view = new QtGraphicsView(widget);
+	QtGraphicsView* view = new QtGraphicsView(&m_focusHandler, widget);
 	view->setScene(scene);
 	view->setDragMode(QGraphicsView::ScrollHandDrag);
 	view->setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
@@ -65,8 +66,9 @@ QtGraphView::QtGraphView(ViewLayout* viewLayout)
 	widget->layout()->addWidget(view);
 
 	connect(view, &QtGraphicsView::emptySpaceClicked, this, &QtGraphView::clickedInEmptySpace);
-	connect(view, &QtGraphicsView::characterKeyPressed, this, &QtGraphView::pressedCharacterKey);
 	connect(view, &QtGraphicsView::resized, this, &QtGraphView::resized);
+	connect(view, &QtGraphicsView::focusIn, [this](){ setNavigationFocus(true); });
+	connect(view, &QtGraphicsView::focusOut, [this](){ setNavigationFocus(false); });
 
 	m_scrollSpeedChangeListenerHorizontal.setScrollBar(view->horizontalScrollBar());
 	m_scrollSpeedChangeListenerVertical.setScrollBar(view->verticalScrollBar());
@@ -80,11 +82,11 @@ QtGraphView::QtGraphView(ViewLayout* viewLayout)
 
 		{
 			m_expandButton = new QtSelfRefreshIconButton(
-				"",
+				QLatin1String(""),
 				ResourcePaths::getGuiPath().concatenate(L"graph_view/images/graph.png"),
 				"search/button");
-			m_expandButton->setObjectName("expand_button");
-			m_expandButton->setToolTip("show trail controls");
+			m_expandButton->setObjectName(QStringLiteral("expand_button"));
+			m_expandButton->setToolTip(QStringLiteral("show trail controls"));
 			m_expandButton->setIconSize(QSize(16, 16));
 			m_expandButton->setGeometry(0, 0, 26, 26);
 			connect(m_expandButton, &QPushButton::clicked, this, &QtGraphView::clickedExpand);
@@ -97,44 +99,47 @@ QtGraphView::QtGraphView(ViewLayout* viewLayout)
 			stack->addWidget(ui);
 
 			m_collapseButton = new QtSelfRefreshIconButton(
-				"",
+				QLatin1String(""),
 				ResourcePaths::getGuiPath().concatenate(L"graph_view/images/graph_arrow.png"),
 				"search/button",
 				ui);
-			m_collapseButton->setObjectName("collapse_button");
-			m_collapseButton->setToolTip("hide trail controls");
+			m_collapseButton->setObjectName(QStringLiteral("collapse_button"));
+			m_collapseButton->setToolTip(QStringLiteral("hide trail controls"));
 			m_collapseButton->setIconSize(QSize(16, 16));
 			connect(m_collapseButton, &QPushButton::clicked, this, &QtGraphView::clickedCollapse);
 
-			m_customTrailButton = new QtSelfRefreshIconButton("", FilePath(), "search/button", ui);
-			m_customTrailButton->setObjectName("trail_button");
+			m_customTrailButton = new QtSelfRefreshIconButton(
+				QLatin1String(""), FilePath(), "search/button", ui);
+			m_customTrailButton->setObjectName(QStringLiteral("trail_button"));
 			m_customTrailButton->setIconSize(QSize(16, 16));
-			m_customTrailButton->setToolTip("custom trail");
+			m_customTrailButton->setToolTip(QStringLiteral("custom trail"));
 			m_customTrailButton->setIconPath(
 				ResourcePaths::getGuiPath().concatenate(L"graph_view/images/graph_custom.png"));
 			connect(
 				m_customTrailButton, &QPushButton::clicked, this, &QtGraphView::clickedCustomTrail);
 
-			m_forwardTrailButton = new QtSelfRefreshIconButton("", FilePath(), "search/button", ui);
-			m_forwardTrailButton->setObjectName("trail_button");
+			m_forwardTrailButton = new QtSelfRefreshIconButton(
+				QLatin1String(""), FilePath(), "search/button", ui);
+			m_forwardTrailButton->setObjectName(QStringLiteral("trail_button"));
 			m_forwardTrailButton->setIconSize(QSize(16, 16));
 			connect(
 				m_forwardTrailButton, &QPushButton::clicked, this, &QtGraphView::clickedForwardTrail);
 
-			m_backwardTrailButton = new QtSelfRefreshIconButton("", FilePath(), "search/button", ui);
-			m_backwardTrailButton->setObjectName("trail_button");
+			m_backwardTrailButton = new QtSelfRefreshIconButton(
+				QLatin1String(""), FilePath(), "search/button", ui);
+			m_backwardTrailButton->setObjectName(QStringLiteral("trail_button"));
 			m_backwardTrailButton->setIconSize(QSize(16, 16));
 			connect(
 				m_backwardTrailButton, &QPushButton::clicked, this, &QtGraphView::clickedBackwardTrail);
 
 			m_trailDepthLabel = new QLabel(ui);
-			m_trailDepthLabel->setObjectName("depth_label");
-			m_trailDepthLabel->setToolTip("adjust trail depth");
+			m_trailDepthLabel->setObjectName(QStringLiteral("depth_label"));
+			m_trailDepthLabel->setToolTip(QStringLiteral("adjust trail depth"));
 			m_trailDepthLabel->setAlignment(Qt::AlignCenter);
 
 			m_trailDepthSlider = new QSlider(Qt::Vertical, ui);
-			m_trailDepthSlider->setObjectName("depth_slider");
-			m_trailDepthSlider->setToolTip("adjust trail depth");
+			m_trailDepthSlider->setObjectName(QStringLiteral("depth_slider"));
+			m_trailDepthSlider->setToolTip(QStringLiteral("adjust trail depth"));
 			m_trailDepthSlider->setMinimum(1);
 			m_trailDepthSlider->setMaximum(26);
 			m_trailDepthSlider->setValue(5);
@@ -171,19 +176,19 @@ QtGraphView::QtGraphView(ViewLayout* viewLayout)
 	// group controls
 	{
 		m_groupFileButton = new QtSelfRefreshIconButton(
-			"",
+			QLatin1String(""),
 			ResourcePaths::getGuiPath().concatenate(L"graph_view/images/file.png"),
 			"search/button");
 		m_groupNamespaceButton = new QtSelfRefreshIconButton(
-			"",
+			QLatin1String(""),
 			ResourcePaths::getGuiPath().concatenate(L"graph_view/images/group_namespace.png"),
 			"search/button");
 
-		m_groupFileButton->setObjectName("group_right_button");
-		m_groupNamespaceButton->setObjectName("group_left_button");
+		m_groupFileButton->setObjectName(QStringLiteral("group_right_button"));
+		m_groupNamespaceButton->setObjectName(QStringLiteral("group_left_button"));
 
-		m_groupFileButton->setToolTip("group by file");
-		m_groupNamespaceButton->setToolTip("group by package/namespace/module");
+		m_groupFileButton->setToolTip(QStringLiteral("group by file"));
+		m_groupNamespaceButton->setToolTip(QStringLiteral("group by package/namespace/module"));
 
 		m_groupFileButton->setCheckable(true);
 		m_groupNamespaceButton->setCheckable(true);
@@ -342,6 +347,7 @@ void QtGraphView::rebuildGraph(
 			activeNodeCount += nodes[i]->getActiveSubNodeCount();
 		}
 
+		Id oldActiveTokenId = m_oldActiveNode ? m_oldActiveNode->getTokenId() : 0;
 		m_nodes.clear();
 		m_activeNodes.clear();
 		m_oldActiveNode = nullptr;
@@ -357,10 +363,17 @@ void QtGraphView::rebuildGraph(
 			}
 		}
 
+		if (m_activeNodes.size() == 1)
+		{
+			m_oldActiveNode = m_activeNodes.front();
+		}
+
+		Id newActiveTokenId = m_oldActiveNode ? m_oldActiveNode->getTokenId() : 0;
 
 		// move graph to center
 		QPointF center = itemsBoundingRect(m_nodes).center();
-		Vec2i o = GraphViewStyle::alignOnRaster(Vec2i(center.x(), center.y()));
+		const Vec2i o = GraphViewStyle::alignOnRaster(
+			Vec2i(static_cast<int>(center.x()), static_cast<int>(center.y())));
 		QPointF offset = QPointF(o.x, o.y);
 		m_sceneRectOffset = offset - center;
 
@@ -396,6 +409,16 @@ void QtGraphView::rebuildGraph(
 			}
 		}
 
+		// focus previously focused node
+		if (params.tokenIdToFocus)
+		{
+			m_focusHandler.focusTokenId(m_nodes, m_edges, params.tokenIdToFocus);
+		}
+		else
+		{
+			m_focusHandler.refocusNode(m_nodes, oldActiveTokenId, newActiveTokenId);
+		}
+
 		m_centerActiveNode = params.centerActiveNode;
 		m_scrollToTop = params.scrollToTop;
 		m_isIndexedList = params.isIndexedList;
@@ -415,6 +438,8 @@ void QtGraphView::rebuildGraph(
 void QtGraphView::clear()
 {
 	m_onQtThread([this]() {
+		m_focusHandler.clear();
+
 		m_oldActiveNode = nullptr;
 		m_activeNodes.clear();
 
@@ -443,15 +468,15 @@ void QtGraphView::clear()
 	});
 }
 
-void QtGraphView::focusTokenIds(const std::vector<Id>& focusedTokenIds)
+void QtGraphView::coFocusTokenIds(const std::vector<Id>& focusedTokenIds)
 {
 	m_onQtThread([=]() {
 		for (const Id& tokenId: focusedTokenIds)
 		{
-			QtGraphNode* node = findNodeRecursive(m_oldNodes, tokenId);
-			if (node)
+			QtGraphNode* node = QtGraphNode::findNodeRecursive(m_oldNodes, tokenId);
+			if (node && !node->getIsFocused())
 			{
-				node->focusIn();
+				node->coFocusIn();
 				continue;
 			}
 
@@ -459,7 +484,7 @@ void QtGraphView::focusTokenIds(const std::vector<Id>& focusedTokenIds)
 			{
 				if (edge->getData() && edge->getData()->getId() == tokenId)
 				{
-					edge->focusIn();
+					edge->coFocusIn();
 					break;
 				}
 			}
@@ -467,15 +492,15 @@ void QtGraphView::focusTokenIds(const std::vector<Id>& focusedTokenIds)
 	});
 }
 
-void QtGraphView::defocusTokenIds(const std::vector<Id>& defocusedTokenIds)
+void QtGraphView::deCoFocusTokenIds(const std::vector<Id>& defocusedTokenIds)
 {
 	m_onQtThread([=]() {
 		for (const Id& tokenId: defocusedTokenIds)
 		{
-			QtGraphNode* node = findNodeRecursive(m_oldNodes, tokenId);
-			if (node && (node->isDataNode() || node->isGroupNode()))
+			QtGraphNode* node = QtGraphNode::findNodeRecursive(m_oldNodes, tokenId);
+			if (node && !node->getIsFocused())
 			{
-				node->focusOut();
+				node->coFocusOut();
 				continue;
 			}
 
@@ -483,7 +508,7 @@ void QtGraphView::defocusTokenIds(const std::vector<Id>& defocusedTokenIds)
 			{
 				if (edge->getData() && edge->getData()->getId() == tokenId)
 				{
-					edge->focusOut();
+					edge->coFocusOut();
 					break;
 				}
 			}
@@ -500,8 +525,10 @@ Vec2i QtGraphView::getViewSize() const
 {
 	QtGraphicsView* view = getView();
 
-	float zoomFactor = view->getZoomFactor();
-	return Vec2i((view->width() - 50) / zoomFactor, (view->height() - 100) / zoomFactor);
+	const float zoomFactor = view->getZoomFactor();
+	return Vec2i(
+		static_cast<int>((view->width() - 50) / zoomFactor),
+		static_cast<int>((view->height() - 100) / zoomFactor));
 }
 
 GroupType QtGraphView::getGrouping() const
@@ -537,7 +564,6 @@ void QtGraphView::activateEdge(Id edgeId)
 		for (QtGraphEdge* edge: m_oldEdges)
 		{
 			edge->setIsActive(false);
-			edge->setIsFocused(false);
 		}
 
 		for (QtGraphEdge* edge: m_oldEdges)
@@ -549,6 +575,87 @@ void QtGraphView::activateEdge(Id edgeId)
 			}
 		}
 	});
+}
+
+void QtGraphView::setNavigationFocus(bool focus)
+{
+	if (m_hasFocus == focus)
+	{
+		return;
+	}
+
+	m_hasFocus = focus;
+
+	m_onQtThread([this, focus]() {
+		focusView(focus);
+
+		if (focus)
+		{
+			m_focusHandler.focus();
+		}
+		else
+		{
+			m_focusHandler.defocus();
+		}
+	});
+}
+
+bool QtGraphView::hasNavigationFocus() const
+{
+	return m_hasFocus;
+}
+
+void QtGraphView::focusView(bool focusIn)
+{
+	QtGraphicsView* view = getView();
+
+	view->blockSignals(true);
+
+	if (focusIn)
+	{
+		view->setFocus();
+	}
+	else
+	{
+		view->clearFocus();
+	}
+
+	view->blockSignals(false);
+}
+
+const std::list<QtGraphNode*>& QtGraphView::getGraphNodes() const
+{
+	return m_oldNodes;
+}
+
+const std::list<QtGraphEdge*>& QtGraphView::getGraphEdges() const
+{
+	return m_oldEdges;
+}
+
+QtGraphNode* QtGraphView::getActiveNode() const
+{
+	return m_oldActiveNode;
+}
+
+void QtGraphView::ensureNodeVisible(QtGraphNode* node)
+{
+	QtGraphicsView* view = getView();
+
+	Vec4i r = node->getBoundingRect();
+	QRectF rect(r.x(), r.y(), r.z() - r.x(), r.w() - r.y());
+
+	if (rect.width() > view->width() - 100)
+	{
+		rect.setWidth(view->width() - 100);
+	}
+
+	if (rect.height() > view->height() - 100)
+	{
+		rect.setHeight(view->height() - 100);
+	}
+
+	view->ensureVisibleAnimated(rect, 100, 100);
 }
 
 void QtGraphView::updateScrollBars()
@@ -609,8 +716,6 @@ void QtGraphView::clickedInEmptySpace()
 		{
 			activeEdges.push_back(edge);
 		}
-
-		edge->setIsFocused(false);
 	}
 
 	if (m_graph && m_graph->getTrailMode() != Graph::TRAIL_NONE)
@@ -623,60 +728,6 @@ void QtGraphView::clickedInEmptySpace()
 	else if (activeEdges.size() == 1)
 	{
 		MessageDeactivateEdge(false).dispatch();
-	}
-}
-
-void QtGraphView::pressedCharacterKey(QChar c)
-{
-	if (!m_isIndexedList)
-	{
-		return;
-	}
-
-	const QtGraphNode* node = nullptr;
-	bool hasTextNodes = false;
-
-	std::vector<QtGraphNode*> nodes(m_oldNodes.begin(), m_oldNodes.end());
-
-	size_t i = 0;
-	while (i < nodes.size())
-	{
-		QtGraphNode* n = nodes[i++];
-		if (n->isGroupNode())
-		{
-			nodes.insert(nodes.end(), n->getSubNodes().begin(), n->getSubNodes().end());
-		}
-		else if (n->isTextNode() && n->getName().size())
-		{
-			hasTextNodes = true;
-			QChar start(n->getName()[0]);
-			if (start.toLower() >= c.toLower())
-			{
-				node = n;
-				break;
-			}
-		}
-	}
-
-	if (!hasTextNodes)
-	{
-		return;
-	}
-
-	QtGraphicsView* view = getView();
-
-	if (!node)
-	{
-		view->ensureVisibleAnimated(
-			QRectF(0, view->scene()->height() - 5, view->scene()->width(), 5), 100, 100);
-	}
-	else
-	{
-		Vec2i pos = node->getPosition();
-		Vec2i size = node->getSize();
-
-		view->ensureVisibleAnimated(
-			QRectF(pos.x, pos.y, size.x, size.y + getViewSize().y / 3 * 2), 100, 100);
 	}
 }
 
@@ -702,7 +753,7 @@ void QtGraphView::trailDepthChanged(int)
 {
 	if (m_trailDepthSlider->value() == m_trailDepthSlider->maximum())
 	{
-		m_trailDepthLabel->setText("inf");
+		m_trailDepthLabel->setText(QStringLiteral("inf"));
 	}
 	else
 	{
@@ -849,26 +900,26 @@ void QtGraphView::updateTrailButtons()
 
 	if (message.edgeTypes & Edge::EDGE_CALL)
 	{
-		m_backwardTrailButton->setToolTip("show caller graph");
-		m_forwardTrailButton->setToolTip("show callee graph");
+		m_backwardTrailButton->setToolTip(QStringLiteral("show caller graph"));
+		m_forwardTrailButton->setToolTip(QStringLiteral("show callee graph"));
 	}
 	else if (message.edgeTypes & Edge::EDGE_INHERITANCE)
 	{
-		m_backwardTrailButton->setToolTip("show base hierarchy");
-		m_forwardTrailButton->setToolTip("show derived hierarchy");
+		m_backwardTrailButton->setToolTip(QStringLiteral("show base hierarchy"));
+		m_forwardTrailButton->setToolTip(QStringLiteral("show derived hierarchy"));
 
 		backwardImagePath = L"graph_up.png";
 		forwardImagePath = L"graph_down.png";
 	}
 	else if (message.edgeTypes & Edge::EDGE_INCLUDE)
 	{
-		m_backwardTrailButton->setToolTip("show including files hierarchy");
-		m_forwardTrailButton->setToolTip("show included files hierarchy");
+		m_backwardTrailButton->setToolTip(QStringLiteral("show including files hierarchy"));
+		m_forwardTrailButton->setToolTip(QStringLiteral("show included files hierarchy"));
 	}
 	else
 	{
-		m_backwardTrailButton->setToolTip("no trail for active symbol");
-		m_forwardTrailButton->setToolTip("no trail for active symbol");
+		m_backwardTrailButton->setToolTip(QStringLiteral("no trail for active symbol"));
+		m_forwardTrailButton->setToolTip(QStringLiteral("no trail for active symbol"));
 	}
 
 	m_forwardTrailButton->setIconPath(
@@ -908,13 +959,14 @@ void QtGraphView::switchToNewGraphData()
 		updateScrollBars();
 	}
 
-	// Manually hover the item below the mouse cursor.
 	QtGraphicsView* view = getView();
-	QtGraphNode* node = view->getNodeAtCursorPosition();
-	if (node)
-	{
-		node->hoverEnter();
-	}
+
+	// // Manually hover the item below the mouse cursor.
+	// QtGraphNode* node = view->getNodeAtCursorPosition();
+	// if (node)
+	// {
+	// 	node->hoverEnter();
+	// }
 
 	if (m_activeNodes.size())
 	{
@@ -922,12 +974,12 @@ void QtGraphView::switchToNewGraphData()
 		{
 			centerNode(m_activeNodes.front());
 		}
-
-		if (m_activeNodes.size() == 1)
-		{
-			m_oldActiveNode = m_activeNodes.front();
-		}
 		m_activeNodes.clear();
+	}
+
+	if (hasNavigationFocus())
+	{
+		m_focusHandler.focusInitialNode();
 	}
 
 	// Repaint to make sure all artifacts are removed
@@ -945,7 +997,7 @@ QtGraphicsView* QtGraphView::getView() const
 {
 	QWidget* widget = QtViewWidgetWrapper::getWidgetOfView(this);
 
-	QtGraphicsView* view = widget->findChild<QtGraphicsView*>("");
+	QtGraphicsView* view = widget->findChild<QtGraphicsView*>(QLatin1String(""));
 
 	if (!view)
 	{
@@ -958,25 +1010,6 @@ QtGraphicsView* QtGraphView::getView() const
 void QtGraphView::doResize()
 {
 	getView()->setSceneRect(getSceneRect(m_oldNodes));
-}
-
-QtGraphNode* QtGraphView::findNodeRecursive(const std::list<QtGraphNode*>& nodes, Id tokenId)
-{
-	for (QtGraphNode* node: nodes)
-	{
-		if (node->getTokenId() == tokenId)
-		{
-			return node;
-		}
-
-		QtGraphNode* result = findNodeRecursive(node->getSubNodes(), tokenId);
-		if (result != nullptr)
-		{
-			return result;
-		}
-	}
-
-	return nullptr;
 }
 
 QtGraphNode* QtGraphView::createNodeRecursive(
@@ -995,7 +1028,12 @@ QtGraphNode* QtGraphView::createNodeRecursive(
 	if (node->isGraphNode())
 	{
 		newNode = new QtGraphNodeData(
-			node->data, node->name, node->childVisible, node->getQualifierNode() != nullptr, interactive);
+			&m_focusHandler,
+			node->data,
+			node->name,
+			node->childVisible,
+			node->getQualifierNode() != nullptr,
+			interactive);
 	}
 	else if (node->isAccessNode())
 	{
@@ -1003,12 +1041,17 @@ QtGraphNode* QtGraphView::createNodeRecursive(
 	}
 	else if (node->isExpandToggleNode())
 	{
-		newNode = new QtGraphNodeExpandToggle(node->isExpanded(), node->invisibleSubNodeCount);
+		newNode = new QtGraphNodeExpandToggle(node->isExpanded(), static_cast<int>(node->invisibleSubNodeCount));
 	}
 	else if (node->isBundleNode())
 	{
 		newNode = new QtGraphNodeBundle(
-			node->tokenId, node->getBundledNodeCount(), node->bundledNodeType, node->name);
+			&m_focusHandler,
+			node->tokenId,
+			node->getBundledNodeCount(),
+			node->bundledNodeType,
+			node->name,
+			interactive);
 	}
 	else if (node->isQualifierNode())
 	{
@@ -1020,7 +1063,12 @@ QtGraphNode* QtGraphView::createNodeRecursive(
 	}
 	else if (node->isGroupNode())
 	{
-		newNode = new QtGraphNodeGroup(node->tokenId, node->name, node->groupType, node->interactive);
+		newNode = new QtGraphNodeGroup(
+			&m_focusHandler,
+			node->tokenId,
+			node->name,
+			node->groupType,
+			node->interactive && interactive);
 	}
 	else
 	{
@@ -1084,12 +1132,13 @@ QtGraphEdge* QtGraphView::createEdge(
 		return nullptr;
 	}
 
-	QtGraphNode* owner = findNodeRecursive(m_nodes, edge->ownerId);
-	QtGraphNode* target = findNodeRecursive(m_nodes, edge->targetId);
+	QtGraphNode* owner = QtGraphNode::findNodeRecursive(m_nodes, edge->ownerId);
+	QtGraphNode* target = QtGraphNode::findNodeRecursive(m_nodes, edge->targetId);
 
 	if (owner != nullptr && target != nullptr)
 	{
 		QtGraphEdge* qtEdge = new QtGraphEdge(
+			&m_focusHandler,
 			owner,
 			target,
 			edge->data,
@@ -1104,10 +1153,10 @@ QtGraphEdge* QtGraphView::createEdge(
 			std::vector<Vec4i> path = edge->path;
 			for (size_t i = 0; i < path.size(); i++)
 			{
-				path[i].x = path[i].x - pathOffset.x();
-				path[i].z = path[i].z - pathOffset.x();
-				path[i].y = path[i].y - pathOffset.y();
-				path[i].w = path[i].w - pathOffset.y();
+				path[i].x = static_cast<int>(path[i].x - pathOffset.x());
+				path[i].z = static_cast<int>(path[i].z - pathOffset.x());
+				path[i].y = static_cast<int>(path[i].y - pathOffset.y());
+				path[i].w = static_cast<int>(path[i].w - pathOffset.y());
 			}
 
 			for (const Vec4i& rect: path)
@@ -1308,7 +1357,7 @@ void QtGraphView::createTransition()
 
 		for (QtGraphNode* node: vanishingNodes)
 		{
-			QPropertyAnimation* anim = new QPropertyAnimation(node, "opacity");
+			QPropertyAnimation* anim = new QPropertyAnimation(node, QByteArrayLiteral("opacity"));
 			anim->setDuration(300);
 			anim->setStartValue(1.0f);
 			anim->setEndValue(0.0f);
@@ -1318,7 +1367,7 @@ void QtGraphView::createTransition()
 
 		for (QtGraphEdge* edge: m_oldEdges)
 		{
-			QPropertyAnimation* anim = new QPropertyAnimation(edge, "opacity");
+			QPropertyAnimation* anim = new QPropertyAnimation(edge, QByteArrayLiteral("opacity"));
 			anim->setDuration(150);
 			anim->setStartValue(1.0f);
 			anim->setEndValue(0.0f);
@@ -1338,7 +1387,7 @@ void QtGraphView::createTransition()
 			QtGraphNode* newNode = p.first;
 			QtGraphNode* oldNode = p.second;
 
-			QPropertyAnimation* anim = new QPropertyAnimation(oldNode, "pos");
+			QPropertyAnimation* anim = new QPropertyAnimation(oldNode, QByteArrayLiteral("pos"));
 			anim->setDuration(300);
 			anim->setStartValue(oldNode->pos());
 			anim->setEndValue(newNode->pos());
@@ -1349,7 +1398,7 @@ void QtGraphView::createTransition()
 			connect(anim, &QPropertyAnimation::finished, oldNode, &QtGraphNode::hideNode);
 			newNode->hide();
 
-			anim = new QPropertyAnimation(oldNode, "size");
+			anim = new QPropertyAnimation(oldNode, QByteArrayLiteral("size"));
 			anim->setDuration(300);
 			anim->setStartValue(oldNode->size());
 			anim->setEndValue(newNode->size());
@@ -1363,7 +1412,7 @@ void QtGraphView::createTransition()
 			}
 		}
 
-		QPropertyAnimation* anim = new QPropertyAnimation(view, "sceneRect");
+		QPropertyAnimation* anim = new QPropertyAnimation(view, QByteArrayLiteral("sceneRect"));
 		anim->setStartValue(view->sceneRect());
 		anim->setEndValue(getSceneRect(m_nodes));
 

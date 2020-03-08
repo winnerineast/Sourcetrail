@@ -24,7 +24,7 @@ QtCustomTrailView::QtCustomTrailView(ViewLayout* viewLayout)
 	, CustomTrailView(nullptr)
 	, m_controllerProxy(this, TabId::app())
 {
-	setWindowTitle("Custom Trail");
+	setWindowTitle(QStringLiteral("Custom Trail"));
 	setWindowFlags(Qt::Window);
 
 	QGridLayout* mainLayout = new QGridLayout();
@@ -40,13 +40,13 @@ QtCustomTrailView::QtCustomTrailView(ViewLayout* viewLayout)
 	QWidget* panelC2 = new QWidget();
 	QWidget* panelD = new QWidget();
 
-	panelA1->setObjectName("panelA");
-	panelA2->setObjectName("panelA");
-	panelB1->setObjectName("panelB");
-	panelB2->setObjectName("panelB");
-	panelC1->setObjectName("panelA");
-	panelC2->setObjectName("panelA");
-	panelD->setObjectName("panelB2");
+	panelA1->setObjectName(QStringLiteral("panelA"));
+	panelA2->setObjectName(QStringLiteral("panelA"));
+	panelB1->setObjectName(QStringLiteral("panelB"));
+	panelB2->setObjectName(QStringLiteral("panelB"));
+	panelC1->setObjectName(QStringLiteral("panelA"));
+	panelC2->setObjectName(QStringLiteral("panelA"));
+	panelD->setObjectName(QStringLiteral("panelB2"));
 
 	mainLayout->addWidget(panelA1, 0, 0);
 	mainLayout->addWidget(panelA2, 0, 1);
@@ -62,10 +62,10 @@ QtCustomTrailView::QtCustomTrailView(ViewLayout* viewLayout)
 		hLayout->setContentsMargins(25, 10, 10, 10);
 		panelA1->setLayout(hLayout);
 
-		m_searchBoxFrom = new QtSmartSearchBox("Start Symbol", false);
-		m_searchBoxTo = new QtSmartSearchBox("Target Symbol", false);
+		m_searchBoxFrom = new QtSmartSearchBox(QStringLiteral("Start Symbol"), false);
+		m_searchBoxTo = new QtSmartSearchBox(QStringLiteral("Target Symbol"), false);
 
-		hLayout->addWidget(new QLabel("From:"));
+		hLayout->addWidget(new QLabel(QStringLiteral("From:")));
 		hLayout->addWidget(createSearchBox(m_searchBoxFrom));
 		hLayout->addSpacing(15);
 
@@ -130,11 +130,11 @@ QtCustomTrailView::QtCustomTrailView(ViewLayout* viewLayout)
 		hLayout->setContentsMargins(25, 10, 10, 10);
 		panelB1->setLayout(hLayout);
 
-		hLayout->addWidget(new QLabel("Max Depth:"));
+		hLayout->addWidget(new QLabel(QStringLiteral("Max Depth:")));
 
 		m_slider = new QSlider(Qt::Horizontal);
-		m_slider->setObjectName("depth_slider");
-		m_slider->setToolTip("adjust graph depth");
+		m_slider->setObjectName(QStringLiteral("depth_slider"));
+		m_slider->setToolTip(QStringLiteral("adjust graph depth"));
 		m_slider->setMinimum(1);
 		m_slider->setMaximum(51);
 		m_slider->setMinimumWidth(150);
@@ -149,7 +149,7 @@ QtCustomTrailView::QtCustomTrailView(ViewLayout* viewLayout)
 		connect(m_slider, &QSlider::valueChanged, [this, valueLabel](int) {
 			if (m_slider->value() == m_slider->maximum())
 			{
-				valueLabel->setText("inf");
+				valueLabel->setText(QStringLiteral("inf"));
 			}
 			else
 			{
@@ -167,12 +167,12 @@ QtCustomTrailView::QtCustomTrailView(ViewLayout* viewLayout)
 		hLayout->setSpacing(15);
 		panelB2->setLayout(hLayout);
 
-		m_horizontalButton = new QRadioButton("Horizontal");
-		m_verticalButton = new QRadioButton("Vertical");
+		m_horizontalButton = new QRadioButton(QStringLiteral("Horizontal"));
+		m_verticalButton = new QRadioButton(QStringLiteral("Vertical"));
 
 		m_horizontalButton->setChecked(true);
 
-		hLayout->addWidget(new QLabel("Layout Direction:"));
+		hLayout->addWidget(new QLabel(QStringLiteral("Layout Direction:")));
 		hLayout->addWidget(m_horizontalButton);
 		hLayout->addWidget(m_verticalButton);
 
@@ -190,36 +190,36 @@ QtCustomTrailView::QtCustomTrailView(ViewLayout* viewLayout)
 		std::vector<QString> nodeFilters;
 		std::vector<QColor> nodeColors;
 
-		std::vector<NodeType::Type> nodeTypes = {// NodeType::NODE_SYMBOL,
-												 NodeType::NODE_TYPE,
-												 NodeType::NODE_BUILTIN_TYPE,
-												 // NodeType::NODE_MODULE,
-												 // NodeType::NODE_NAMESPACE,
-												 // NodeType::NODE_PACKAGE,
-												 NodeType::NODE_CLASS,
-												 NodeType::NODE_STRUCT,
-												 NodeType::NODE_UNION,
-												 NodeType::NODE_INTERFACE,
-												 NodeType::NODE_TYPEDEF,
-												 NodeType::NODE_TYPE_PARAMETER,
-												 NodeType::NODE_ENUM,
-												 NodeType::NODE_ENUM_CONSTANT,
-												 NodeType::NODE_GLOBAL_VARIABLE,
-												 NodeType::NODE_FIELD,
-												 NodeType::NODE_FUNCTION,
-												 NodeType::NODE_METHOD,
-												 NodeType::NODE_FILE,
-												 NodeType::NODE_MACRO,
-												 NodeType::NODE_ANNOTATION};
+		const std::vector<NodeKind> nodeKinds = {// NODE_SYMBOL,
+												 NODE_TYPE,
+												 NODE_BUILTIN_TYPE,
+												 // NODE_MODULE,
+												 // NODE_NAMESPACE,
+												 // NODE_PACKAGE,
+												 NODE_CLASS,
+												 NODE_STRUCT,
+												 NODE_UNION,
+												 NODE_INTERFACE,
+												 NODE_TYPEDEF,
+												 NODE_TYPE_PARAMETER,
+												 NODE_ENUM,
+												 NODE_ENUM_CONSTANT,
+												 NODE_GLOBAL_VARIABLE,
+												 NODE_FIELD,
+												 NODE_FUNCTION,
+												 NODE_METHOD,
+												 NODE_FILE,
+												 NODE_MACRO,
+												 NODE_ANNOTATION};
 
-		for (NodeType::Type t: nodeTypes)
+		for (NodeKind t: nodeKinds)
 		{
-			nodeFilters.push_back(QString::fromStdString(NodeType::getReadableTypeString(t)));
-			nodeColors.push_back(
-				QColor(scheme->getNodeTypeColor(t, "fill", ColorScheme::FOCUS).c_str()));
+			nodeFilters.push_back(QString::fromStdString(getReadableNodeKindString(t)));
+			nodeColors.push_back(QColor(scheme->getNodeTypeColor(NodeType(t), "fill", true).c_str()));
 		}
 
-		QVBoxLayout* filterLayout = addFilters("Nodes:", nodeFilters, nodeColors, &m_nodeFilters, 11);
+		QVBoxLayout* filterLayout = addFilters(
+			QStringLiteral("Nodes:"), nodeFilters, nodeColors, &m_nodeFilters, 11);
 		filterLayout->setContentsMargins(25, 10, 25, 10);
 		panelC1->setLayout(filterLayout);
 	}
@@ -252,27 +252,28 @@ QtCustomTrailView::QtCustomTrailView(ViewLayout* viewLayout)
 		for (Edge::EdgeType t: edgeTypes)
 		{
 			edgeFilters.push_back(QString::fromStdWString(Edge::getReadableTypeString(t)));
-			edgeColors.push_back(QColor(scheme->getEdgeTypeColor(t, ColorScheme::FOCUS).c_str()));
+			edgeColors.push_back(QColor(scheme->getEdgeTypeColor(t).c_str()));
 		}
 
-		QVBoxLayout* filterLayout = addFilters("Edges:", edgeFilters, edgeColors, &m_edgeFilters, 5);
+		QVBoxLayout* filterLayout = addFilters(
+			QStringLiteral("Edges:"), edgeFilters, edgeColors, &m_edgeFilters, 5);
 		filterLayout->setContentsMargins(10, 10, 25, 10);
 		panelC2->setLayout(filterLayout);
 	}
 
 	// controls
 	{
-		QPushButton* cancelButton = new QPushButton("Cancel");
-		QPushButton* searchButton = new QPushButton("Search");
+		QPushButton* cancelButton = new QPushButton(QStringLiteral("Cancel"));
+		QPushButton* searchButton = new QPushButton(QStringLiteral("Search"));
 
-		cancelButton->setObjectName("button");
-		searchButton->setObjectName("button");
+		cancelButton->setObjectName(QStringLiteral("button"));
+		searchButton->setObjectName(QStringLiteral("button"));
 
 		cancelButton->setAttribute(Qt::WA_LayoutUsesWidgetRect);	// fixes layouting on Mac
 		searchButton->setAttribute(Qt::WA_LayoutUsesWidgetRect);	// fixes layouting on Mac
 
 		m_errorLabel = new QLabel();
-		m_errorLabel->setObjectName("error");
+		m_errorLabel->setObjectName(QStringLiteral("error"));
 
 		QHBoxLayout* hLayout = new QHBoxLayout();
 		hLayout->setContentsMargins(25, 15, 25, 15);
@@ -289,7 +290,7 @@ QtCustomTrailView::QtCustomTrailView(ViewLayout* viewLayout)
 			if (m_searchBoxFrom->getMatches().size() == 0 ||
 				m_searchBoxFrom->getMatches().front().tokenIds.size() == 0)
 			{
-				setError("No 'Start Symbol' symbol found.");
+				setError(QStringLiteral("No 'Start Symbol' symbol found."));
 				return;
 			}
 
@@ -309,23 +310,23 @@ QtCustomTrailView::QtCustomTrailView(ViewLayout* viewLayout)
 				}
 				else
 				{
-					setError("No 'Target Symbol' symbol found.");
+					setError(QStringLiteral("No 'Target Symbol' symbol found."));
 					return;
 				}
 			}
 
-			NodeType::TypeMask nodeTypes = getCheckedNodeTypes();
+			NodeKindMask nodeTypes = getCheckedNodeTypes();
 			Edge::TypeMask edgeTypes = getCheckedEdgeTypes();
 
 			if (!nodeTypes)
 			{
-				setError("No 'Nodes' selected.");
+				setError(QStringLiteral("No 'Nodes' selected."));
 				return;
 			}
 
 			if (!edgeTypes)
 			{
-				setError("No 'Edges' selected.");
+				setError(QStringLiteral("No 'Edges' selected."));
 				return;
 			}
 
@@ -340,7 +341,7 @@ QtCustomTrailView::QtCustomTrailView(ViewLayout* viewLayout)
 
 			m_controllerProxy.executeAsTaskWithArgs(&CustomTrailController::activateTrail, message);
 
-			setError("");
+			setError(QLatin1String(""));
 
 			hide();
 		});
@@ -366,7 +367,7 @@ void QtCustomTrailView::clearView()
 	});
 }
 
-void QtCustomTrailView::setAvailableNodeAndEdgeTypes(NodeType::TypeMask nodeTypes, Edge::TypeMask edgeTypes)
+void QtCustomTrailView::setAvailableNodeAndEdgeTypes(NodeKindMask nodeTypes, Edge::TypeMask edgeTypes)
 {
 	m_onQtThread([this, nodeTypes, edgeTypes]() {
 		for (QCheckBox* filter: m_nodeFilters)
@@ -377,7 +378,7 @@ void QtCustomTrailView::setAvailableNodeAndEdgeTypes(NodeType::TypeMask nodeType
 			}
 
 			bool enabled = nodeTypes &
-				NodeType::getTypeForReadableTypeString(filter->text().toStdWString());
+				getNodeKindForReadableNodeKindString(filter->text().toStdWString());
 			filter->setEnabled(enabled);
 			filter->setVisible(enabled);
 		}
@@ -464,7 +465,7 @@ void QtCustomTrailView::updateStyleSheet()
 QWidget* QtCustomTrailView::createSearchBox(QtSmartSearchBox* searchBox) const
 {
 	QWidget* searchBoxContainer = new QWidget();
-	searchBoxContainer->setObjectName("search_box_container");
+	searchBoxContainer->setObjectName(QStringLiteral("search_box_container"));
 	searchBoxContainer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Maximum);
 	searchBox->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Maximum);
 
@@ -477,7 +478,7 @@ QWidget* QtCustomTrailView::createSearchBox(QtSmartSearchBox* searchBox) const
 }
 
 QVBoxLayout* QtCustomTrailView::addFilters(
-	QString name,
+	const QString& name,
 	const std::vector<QString>& filters,
 	const std::vector<QColor>& colors,
 	std::vector<QCheckBox*>* checkBoxes,
@@ -516,7 +517,7 @@ QVBoxLayout* QtCustomTrailView::addFilters(
 
 	if (checkBoxes == &m_nodeFilters)
 	{
-		m_nodeNonIndexed = new QCheckBox("non-indexed");
+		m_nodeNonIndexed = new QCheckBox(QStringLiteral("non-indexed"));
 		m_nodeNonIndexed->setChecked(true);
 		checkBoxes->push_back(m_nodeNonIndexed);
 
@@ -525,7 +526,7 @@ QVBoxLayout* QtCustomTrailView::addFilters(
 	}
 	else if (checkBoxes == &m_edgeFilters)
 	{
-		m_edgeMember = new QCheckBox("member");
+		m_edgeMember = new QCheckBox(QStringLiteral("member"));
 		m_edgeMember->setChecked(true);
 		checkBoxes->push_back(m_edgeMember);
 
@@ -546,11 +547,11 @@ QHBoxLayout* QtCustomTrailView::addCheckButtons(const std::vector<QCheckBox*>& c
 {
 	QHBoxLayout* buttonLayout = new QHBoxLayout();
 
-	QPushButton* checkButton = new QPushButton("Check All");
-	QPushButton* uncheckButton = new QPushButton("Uncheck All");
+	QPushButton* checkButton = new QPushButton(QStringLiteral("Check All"));
+	QPushButton* uncheckButton = new QPushButton(QStringLiteral("Uncheck All"));
 
-	checkButton->setObjectName("button_small");
-	uncheckButton->setObjectName("button_small");
+	checkButton->setObjectName(QStringLiteral("button_small"));
+	uncheckButton->setObjectName(QStringLiteral("button_small"));
 
 	buttonLayout->addWidget(checkButton);
 	buttonLayout->addWidget(uncheckButton);
@@ -576,14 +577,14 @@ QHBoxLayout* QtCustomTrailView::addCheckButtons(const std::vector<QCheckBox*>& c
 	return buttonLayout;
 }
 
-NodeType::TypeMask QtCustomTrailView::getCheckedNodeTypes() const
+NodeKindMask QtCustomTrailView::getCheckedNodeTypes() const
 {
-	NodeType::TypeMask nodeTypes = 0;
+	NodeKindMask nodeTypes = 0;
 	for (const QCheckBox* filter: m_nodeFilters)
 	{
 		if (filter->isEnabled() && filter->isChecked() && filter != m_nodeNonIndexed)
 		{
-			nodeTypes |= NodeType::getTypeForReadableTypeString(filter->text().toStdWString());
+			nodeTypes |= getNodeKindForReadableNodeKindString(filter->text().toStdWString());
 		}
 	}
 	return nodeTypes;

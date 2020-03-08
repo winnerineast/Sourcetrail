@@ -47,6 +47,11 @@ void QtProjectWizardWindow::loadContent()
 	m_content->load();
 }
 
+void QtProjectWizardWindow::refreshContent()
+{
+	m_content->refresh();
+}
+
 void QtProjectWizardWindow::populateWindow(QWidget* widget)
 {
 	QGridLayout* layout = new QGridLayout();
@@ -80,7 +85,7 @@ void QtProjectWizardWindow::populateWindow(QWidget* widget)
 
 void QtProjectWizardWindow::windowReady()
 {
-	updateTitle("NEW SOURCE GROUP");
+	updateTitle(QStringLiteral("NEW SOURCE GROUP"));
 
 	m_content->windowReady();
 }

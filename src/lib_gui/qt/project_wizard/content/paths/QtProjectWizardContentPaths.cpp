@@ -88,15 +88,17 @@ bool QtProjectWizardContentPaths::check()
 
 		if (!missingPaths.isEmpty())
 		{
-			QMessageBox msgBox;
+			QMessageBox msgBox(m_window);
 			msgBox.setText(QString("Some provided paths do not exist at \"%1\". Do you want to "
 								   "remove them before continuing?")
 							   .arg(m_titleString));
 			msgBox.setDetailedText(missingPaths);
-			QPushButton* removeButton = msgBox.addButton("Remove", QMessageBox::YesRole);
-			QPushButton* keepButton = msgBox.addButton("Keep", QMessageBox::ButtonRole::NoRole);
+			QPushButton* removeButton = msgBox.addButton(
+				QStringLiteral("Remove"), QMessageBox::YesRole);
+			QPushButton* keepButton = msgBox.addButton(
+				QStringLiteral("Keep"), QMessageBox::ButtonRole::NoRole);
 			QPushButton* cancelButton = msgBox.addButton(
-				"Cancel", QMessageBox::ButtonRole::RejectRole);
+				QStringLiteral("Cancel"), QMessageBox::ButtonRole::RejectRole);
 
 			msgBox.exec();
 
@@ -136,7 +138,7 @@ void QtProjectWizardContentPaths::addDetection(QGridLayout* layout, int row)
 		return;
 	}
 
-	QLabel* label = new QLabel("Auto detection from:");
+	QLabel* label = new QLabel(QStringLiteral("Auto detection from:"));
 
 	m_detectorBox = new QComboBox();
 
@@ -145,8 +147,8 @@ void QtProjectWizardContentPaths::addDetection(QGridLayout* layout, int row)
 		m_detectorBox->addItem(detectorName.c_str());
 	}
 
-	QPushButton* button = new QPushButton("detect");
-	button->setObjectName("windowButton");
+	QPushButton* button = new QPushButton(QStringLiteral("detect"));
+	button->setObjectName(QStringLiteral("windowButton"));
 	connect(button, &QPushButton::clicked, this, &QtProjectWizardContentPaths::detectionClicked);
 
 	QHBoxLayout* hlayout = new QHBoxLayout();
@@ -164,7 +166,8 @@ void QtProjectWizardContentPaths::addDetection(QGridLayout* layout, int row)
 
 void QtProjectWizardContentPaths::detectionClicked()
 {
-	std::vector<FilePath> paths = m_pathDetector->getPaths(m_detectorBox->currentText().toStdString());
+	std::vector<FilePath> paths = m_pathDetector->getPathsForDetector(
+		m_detectorBox->currentText().toStdString());
 	std::vector<FilePath> oldPaths = m_list->getPathsAsDisplayed();
 
 	paths = utility::unique(utility::concat(oldPaths, paths));

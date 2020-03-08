@@ -40,7 +40,7 @@ public:
 				return a->isBundleNode();
 			}
 
-			return utility::toLowerCase(a->name) < utility::toLowerCase(b->name);
+			return utility::caseInsensitiveLess(a->name, b->name);
 		}
 	};
 
@@ -116,7 +116,7 @@ public:
 		, invisibleSubNodeCount(0)
 		, bundleId(0)
 		, bundledNodeCount(0)
-		, bundledNodeType(NodeType::NODE_SYMBOL)
+		, bundledNodeType(NODE_SYMBOL)
 		, qualifierName(NAME_DELIMITER_UNKNOWN)
 		, groupType(GroupType::DEFAULT)
 		, groupLayout(GroupLayout::LIST)

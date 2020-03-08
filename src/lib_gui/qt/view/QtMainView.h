@@ -4,22 +4,22 @@
 #include <memory>
 #include <vector>
 
-#include <QStatusBar>
-
 #include "MainView.h"
-#include "QtThreadedFunctor.h"
-
 #include "MessageListener.h"
 #include "MessageProjectEdit.h"
 #include "MessageProjectNew.h"
+#include "MessageWindowChanged.h"
+#include "QtThreadedFunctor.h"
 
 class QtMainWindow;
+class QStatusBar;
 class View;
 
 class QtMainView
 	: public MainView
 	, public MessageListener<MessageProjectEdit>
 	, public MessageListener<MessageProjectNew>
+	, public MessageListener<MessageWindowChanged>
 {
 public:
 	QtMainView(const ViewFactory* viewFactory, StorageAccess* storageAccess);
@@ -51,6 +51,7 @@ public:
 	void loadWindow(bool showStartWindow) override;
 
 	void refreshView() override;
+	void refreshUIState(bool isAfterIndexing) override;
 
 	void hideStartScreen() override;
 	void setTitle(const std::wstring& title) override;
@@ -67,8 +68,9 @@ public:
 private:
 	void handleMessage(MessageProjectEdit* message) override;
 	void handleMessage(MessageProjectNew* message) override;
+	void handleMessage(MessageWindowChanged* message) override;
 
-	std::shared_ptr<QtMainWindow> m_window;
+	QtMainWindow* m_window;
 	std::vector<View*> m_views;
 
 	QtThreadedLambdaFunctor m_onQtThread;

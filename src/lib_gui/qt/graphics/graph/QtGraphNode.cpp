@@ -7,8 +7,8 @@
 #include <QGraphicsSceneEvent>
 #include <QPen>
 
+#include "GraphFocusHandler.h"
 #include "MessageCodeShowDefinition.h"
-#include "MessageGraphNodeExpand.h"
 #include "MessageGraphNodeHide.h"
 #include "MessageGraphNodeMove.h"
 #include "QtDeviceScaledPixmap.h"
@@ -40,7 +40,26 @@ void QtGraphNode::hideNode()
 	this->hide();
 }
 
-QtGraphNode::QtGraphNode()
+QtGraphNode* QtGraphNode::findNodeRecursive(const std::list<QtGraphNode*>& nodes, Id tokenId)
+{
+	for (QtGraphNode* node: nodes)
+	{
+		if (node->getTokenId() == tokenId)
+		{
+			return node;
+		}
+
+		QtGraphNode* result = findNodeRecursive(node->getSubNodes(), tokenId);
+		if (result != nullptr)
+		{
+			return result;
+		}
+	}
+
+	return nullptr;
+}
+
+QtGraphNode::QtGraphNode(GraphFocusHandler* focusHandler): m_focusHandler(focusHandler)
 {
 	this->setPen(QPen(Qt::transparent));
 	this->setCursor(Qt::PointingHandCursor);
@@ -95,7 +114,7 @@ const std::list<QtGraphNode*>& QtGraphNode::getSubNodes() const
 
 Vec2i QtGraphNode::getPosition() const
 {
-	return Vec2i(this->scenePos().x(), this->scenePos().y());
+	return Vec2i(static_cast<int>(this->scenePos().x()), static_cast<int>(this->scenePos().y()));
 }
 
 bool QtGraphNode::setPosition(const Vec2i& position)
@@ -143,7 +162,7 @@ QSize QtGraphNode::size() const
 	return QSize(m_size.x, m_size.y);
 }
 
-void QtGraphNode::setSize(const QSize& size)
+void QtGraphNode::setSize(QSize size)
 {
 	setSize(Vec2i(size.width(), size.height()));
 }
@@ -208,6 +227,11 @@ bool QtGraphNode::hasActiveChild() const
 	return false;
 }
 
+bool QtGraphNode::isFocusable() const
+{
+	return m_isInteractive && (isDataNode() || isGroupNode() || isBundleNode());
+}
+
 std::wstring QtGraphNode::getName() const
 {
 	return m_text->text().toStdWString();
@@ -234,28 +258,84 @@ void QtGraphNode::hoverEnter()
 	}
 }
 
+bool QtGraphNode::getIsFocused() const
+{
+	return m_isFocused;
+}
+
+void QtGraphNode::setIsFocused(bool focused)
+{
+	if (m_isFocused != focused)
+	{
+		m_isFocused = focused;
+
+		if (focused)
+		{
+			coFocusIn();
+		}
+		else
+		{
+			coFocusOut();
+		}
+	}
+}
+
 void QtGraphNode::focusIn()
 {
-	m_isHovering = true;
+	if (m_isInteractive && m_focusHandler)
+	{
+		m_focusHandler->focusNode(this);
+	}
+	else
+	{
+		coFocusIn();
+	}
+}
+
+void QtGraphNode::focusOut()
+{
+	if (m_isInteractive && m_focusHandler)
+	{
+		m_focusHandler->defocusNode(this);
+	}
+	else
+	{
+		coFocusOut();
+	}
+}
+
+void QtGraphNode::coFocusIn()
+{
+	if (m_isCoFocused)
+	{
+		return;
+	}
+
+	m_isCoFocused = true;
 
 	forEachEdge([](QtGraphEdge* edge) {
 		if (edge->isTrailEdge())
 		{
-			edge->focusIn();
+			edge->coFocusIn();
 		}
 	});
 
 	updateStyle();
 }
 
-void QtGraphNode::focusOut()
+void QtGraphNode::coFocusOut()
 {
-	m_isHovering = false;
+	if (!m_isCoFocused)
+	{
+		return;
+	}
+
+	m_isCoFocused = false;
 
 	forEachEdge([](QtGraphEdge* edge) {
 		if (edge->isTrailEdge())
 		{
-			edge->focusOut();
+			edge->coFocusOut();
 		}
 	});
 
@@ -390,23 +470,23 @@ void QtGraphNode::onHide()
 	}
 }
 
-void QtGraphNode::onCollapseExpand()
+Id QtGraphNode::onCollapseExpand()
 {
 	for (auto subNode: getSubNodes())
 	{
 		if (subNode->isExpandToggleNode())
 		{
-			MessageGraphNodeExpand(
-				getTokenId(), !dynamic_cast<QtGraphNodeExpandToggle*>(subNode)->isExpanded())
-				.dispatch();
-			return;
+			subNode->onClick();
+			return getTokenId();
 		}
 	}
 
 	if (getParent())
 	{
-		getParent()->onCollapseExpand();
+		return getParent()->onCollapseExpand();
 	}
+
+	return 0;
 }
 
 void QtGraphNode::onShowDefinition(bool inIDE)
@@ -578,7 +658,7 @@ void QtGraphNode::setStyle(const GraphViewStyle::NodeStyle& style)
 	if (!m_icon && !style.iconPath.empty())
 	{
 		QtDeviceScaledPixmap pixmap(QString::fromStdWString(style.iconPath.wstr()));
-		pixmap.scaleToHeight(style.iconSize);
+		pixmap.scaleToHeight(static_cast<int>(style.iconSize));
 
 		m_icon = new QGraphicsPixmapItem(
 			utility::colorizePixmap(pixmap.pixmap(), style.color.icon.c_str()), this);
@@ -588,7 +668,7 @@ void QtGraphNode::setStyle(const GraphViewStyle::NodeStyle& style)
 	}
 
 	QFont font(style.fontName.c_str());
-	font.setPixelSize(style.fontSize);
+	font.setPixelSize(static_cast<int>(style.fontSize));
 	if (style.fontBold)
 	{
 		font.setWeight(QFont::Bold);
@@ -596,7 +676,9 @@ void QtGraphNode::setStyle(const GraphViewStyle::NodeStyle& style)
 
 	m_text->setFont(font);
 	m_text->setBrush(QBrush(style.color.text.c_str()));
-	m_text->setPos(style.iconOffset.x + style.iconSize + style.textOffset.x, style.textOffset.y);
+	m_text->setPos(
+		static_cast<qreal>(style.iconOffset.x + style.iconSize + style.textOffset.x),
+		static_cast<qreal>(style.textOffset.y));
 
 	if (m_matchLength)
 	{
@@ -605,15 +687,18 @@ void QtGraphNode::setStyle(const GraphViewStyle::NodeStyle& style)
 		m_matchText->setFont(font);
 		m_matchText->setBrush(QBrush(color.text.c_str()));
 		m_matchText->setPos(
-			style.iconOffset.x + style.iconSize + style.textOffset.x, style.textOffset.y);
+			static_cast<qreal>(style.iconOffset.x + style.iconSize + style.textOffset.x),
+			static_cast<qreal>(style.textOffset.y));
 
-		float charWidth = QFontMetrics(font).width("QtGraphNode::QtGraphNode::QtGraphNode") / 37.0f;
-		float charHeight = QFontMetrics(font).height();
+		const float charWidth =
+			QFontMetrics(font).width(QStringLiteral("QtGraphNode::QtGraphNode::QtGraphNode")) / 37.0f;
+		const float charHeight = static_cast<float>(QFontMetrics(font).height());
 		m_matchRect->setRect(
-			style.iconOffset.x + style.iconSize + style.textOffset.x + m_matchPos * charWidth,
-			style.textOffset.y,
-			m_matchLength * charWidth,
-			charHeight);
+			static_cast<qreal>(
+				style.iconOffset.x + style.iconSize + style.textOffset.x + m_matchPos * charWidth),
+			static_cast<qreal>(style.textOffset.y),
+			static_cast<qreal>(m_matchLength * charWidth),
+			static_cast<qreal>(charHeight));
 		m_matchRect->setPen(QPen(color.border.c_str()));
 		m_matchRect->setBrush(QBrush(color.fill.c_str()));
 		m_matchRect->setRadius(3);

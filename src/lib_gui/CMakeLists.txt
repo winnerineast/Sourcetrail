@@ -21,6 +21,8 @@ add_files(
 	qt/element/button/QtSelfRefreshIconButton.cpp
 	qt/element/button/QtSelfRefreshIconButton.h
 
+	qt/element/code/CodeFocusHandler.cpp
+	qt/element/code/CodeFocusHandler.h
 	qt/element/code/QtCodeArea.cpp
 	qt/element/code/QtCodeArea.h
 	qt/element/code/QtCodeField.cpp
@@ -94,8 +96,6 @@ add_files(
 
 	qt/graphics/base/QtCountCircleItem.cpp
 	qt/graphics/base/QtCountCircleItem.h
-	qt/graphics/base/QtGraphicsView.cpp
-	qt/graphics/base/QtGraphicsView.h
 	qt/graphics/base/QtLineItemAngled.cpp
 	qt/graphics/base/QtLineItemAngled.h
 	qt/graphics/base/QtLineItemBase.cpp
@@ -133,6 +133,11 @@ add_files(
 	qt/graphics/graph/QtGraphNodeText.cpp
 	qt/graphics/graph/QtGraphNodeText.h
 
+	qt/graphics/GraphFocusHandler.cpp
+	qt/graphics/GraphFocusHandler.h
+	qt/graphics/QtGraphicsView.cpp
+	qt/graphics/QtGraphicsView.h
+
 	qt/network/QtIDECommunicationController.cpp
 	qt/network/QtIDECommunicationController.h
 	qt/network/QtNetworkFactory.cpp
@@ -166,6 +171,7 @@ add_files(
 	qt/project_wizard/content/QtProjectWizardContentPreferences.h
 	qt/project_wizard/content/QtProjectWizardContentProjectData.cpp
 	qt/project_wizard/content/QtProjectWizardContentProjectData.h
+	qt/project_wizard/content/QtProjectWizardContentRequiredLabel.h
 	qt/project_wizard/content/QtProjectWizardContentSelect.cpp
 	qt/project_wizard/content/QtProjectWizardContentSelect.h
 	qt/project_wizard/content/QtProjectWizardContentSourceGroupData.cpp
@@ -179,8 +185,6 @@ add_files(
 	qt/project_wizard/QtProjectWizard.h
 	qt/project_wizard/QtProjectWizardWindow.cpp
 	qt/project_wizard/QtProjectWizardWindow.h
-	qt/project_wizard/QtSourceGroupWizard.h
-	qt/project_wizard/QtSourceGroupWizardPage.h
 
 	qt/utility/QtContextMenu.cpp
 	qt/utility/QtContextMenu.h
@@ -192,6 +196,8 @@ add_files(
 	qt/utility/QtFilesAndDirectoriesDialog.h
 	qt/utility/QtFlowLayout.cpp
 	qt/utility/QtFlowLayout.h
+	qt/utility/QtHelpButtonInfo.cpp
+	qt/utility/QtHelpButtonInfo.h
 	qt/utility/QtHighlighter.cpp
 	qt/utility/QtHighlighter.h
 	qt/utility/QtScrollSpeedChangeListener.cpp

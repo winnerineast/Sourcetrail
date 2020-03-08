@@ -10,12 +10,13 @@
 #include "MessageFocusIn.h"
 #include "MessageFocusOut.h"
 #include "MessageGraphNodeBundleSplit.h"
-
 #include "QtRoundedRectItem.h"
 
-QtGraphNodeGroup::QtGraphNodeGroup(Id tokenId, const std::wstring& name, GroupType type, bool interactive)
-	: m_tokenId(tokenId), m_type(type), m_interactive(interactive)
+QtGraphNodeGroup::QtGraphNodeGroup(
+	GraphFocusHandler* focusHandler, Id tokenId, const std::wstring& name, GroupType type, bool interactive)
+	: QtGraphNode(focusHandler), m_tokenId(tokenId), m_type(type)
 {
+	m_isInteractive = interactive;
 	if (interactive)
 	{
 		setAcceptHoverEvents(true);
@@ -40,9 +41,10 @@ QtGraphNodeGroup::QtGraphNodeGroup(Id tokenId, const std::wstring& name, GroupTy
 	GraphViewStyle::NodeStyle style = GraphViewStyle::getStyleOfGroupNode(type, false);
 	GraphViewStyle::NodeMargins margins = GraphViewStyle::getMarginsOfGroupNode(type, true);
 
-	int width = style.textOffset.x * 2 + style.borderWidth + margins.charWidth * name.size();
-	int height = margins.spacingA + margins.charHeight;
-	int radius = style.cornerRadius;
+	const int width = static_cast<int>(
+		style.textOffset.x * 2 + style.borderWidth + margins.charWidth * name.size());
+	const int height = static_cast<int>(margins.spacingA + margins.charHeight);
+	const int radius = style.cornerRadius;
 
 	QPainterPath path;
 	path.moveTo(width, 0);
@@ -71,7 +73,7 @@ Id QtGraphNodeGroup::getTokenId() const
 
 void QtGraphNodeGroup::onClick()
 {
-	if (!m_interactive || !m_isHovering)
+	if (!m_isInteractive || !m_isFocused)
 	{
 		return;
 	}
@@ -88,12 +90,17 @@ void QtGraphNodeGroup::onClick()
 
 void QtGraphNodeGroup::updateStyle()
 {
-	GraphViewStyle::NodeStyle style = GraphViewStyle::getStyleOfGroupNode(m_type, m_isHovering);
+	GraphViewStyle::NodeStyle style = GraphViewStyle::getStyleOfGroupNode(m_type, m_isCoFocused);
 
 	if (m_background)
 	{
 		m_background->setBrush(QColor(style.color.border.c_str()));
 		m_background->setPen(QPen(Qt::transparent));
+	}
+
+	if (m_isFocused)
+	{
+		style.color.border = GraphViewStyle::getFocusColor();
 	}
 
 	setStyle(style);
@@ -115,29 +122,25 @@ void QtGraphNodeGroup::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
 	{
 		MessageFocusOut({m_tokenId}).dispatch();
 	}
-	else
-	{
-		focusOut();
-	}
+
+	focusOut();
 }
 
 void QtGraphNodeGroup::hoverMoveEvent(QGraphicsSceneHoverEvent* event)
 {
 	if (!m_background || m_background->contains(event->pos()))
 	{
-		if (!m_isHovering)
+		if (!m_isCoFocused)
 		{
 			if (m_type == GroupType::FILE || m_type == GroupType::NAMESPACE)
 			{
 				MessageFocusIn({m_tokenId}, TOOLTIP_ORIGIN_GRAPH).dispatch();
 			}
-			else
-			{
-				focusIn();
-			}
+
+			focusIn();
 		}
 	}
-	else if (m_isHovering)
+	else if (m_isCoFocused)
 	{
 		hoverLeaveEvent(nullptr);
 	}

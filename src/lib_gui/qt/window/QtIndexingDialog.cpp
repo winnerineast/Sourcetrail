@@ -9,10 +9,10 @@
 #include "ResourcePaths.h"
 #include "utilityQt.h"
 
-QLabel* QtIndexingDialog::createTitleLabel(QString title, QBoxLayout* layout)
+QLabel* QtIndexingDialog::createTitleLabel(const QString& title, QBoxLayout* layout)
 {
 	QLabel* label = new QLabel(title);
-	label->setObjectName("title");
+	label->setObjectName(QStringLiteral("title"));
 	label->setAlignment(Qt::AlignRight | Qt::AlignBottom);
 
 	if (layout)
@@ -26,7 +26,7 @@ QLabel* QtIndexingDialog::createTitleLabel(QString title, QBoxLayout* layout)
 QLabel* QtIndexingDialog::createMessageLabel(QBoxLayout* layout)
 {
 	QLabel* label = new QLabel();
-	label->setObjectName("message");
+	label->setObjectName(QStringLiteral("message"));
 	label->setAlignment(Qt::AlignRight);
 	label->setWordWrap(true);
 	layout->addWidget(label);
@@ -41,19 +41,15 @@ QWidget* QtIndexingDialog::createErrorWidget(QBoxLayout* layout)
 	errorLayout->setSpacing(5);
 
 	QPushButton* errorCount = new QPushButton();
-	errorCount->setObjectName("errorCount");
+	errorCount->setObjectName(QStringLiteral("errorCount"));
 	errorCount->setAttribute(Qt::WA_LayoutUsesWidgetRect);	  // fixes layouting on Mac
 
 	errorCount->setIcon(QPixmap(QString::fromStdWString(
 		ResourcePaths::getGuiPath().concatenate(L"indexing_dialog/error.png").wstr())));
 	errorLayout->addWidget(errorCount);
 
-	QtHelpButton* helpButton = new QtHelpButton("aaa", "bbb");
+	QtHelpButton* helpButton = new QtHelpButton(QtHelpButtonInfo(createErrorHelpButtonInfo()));
 	helpButton->setColor(Qt::white);
-
-	helpButton->disconnect();
-	connect(helpButton, &QtHelpButton::clicked, []() { MessageErrorsHelpMessage(true).dispatch(); });
-
 	errorLayout->addWidget(helpButton);
 
 	layout->addWidget(errorWidget, 0, Qt::AlignRight);
@@ -69,7 +65,7 @@ QLabel* QtIndexingDialog::createFlagLabel(QWidget* parent)
 
 	QLabel* flagLabel = new QLabel(parent);
 	flagLabel->setPixmap(flag.pixmap());
-	flagLabel->resize(flag.width(), flag.height());
+	flagLabel->resize(static_cast<int>(flag.width()), static_cast<int>(flag.height()));
 	flagLabel->move(15, 75);
 	flagLabel->show();
 
@@ -82,10 +78,10 @@ QtIndexingDialog::QtIndexingDialog(bool isSubWindow, QWidget* parent)
 {
 	m_window->setStyleSheet(
 		m_window->styleSheet() +
-		"#window { "
-		"background: #2E3C86;"
-		"border: none;"
-		"}");
+		QStringLiteral("#window { "
+					   "background: #2E3C86;"
+					   "border: none;"
+					   "}"));
 
 	setStyleSheet(
 		(utility::getStyleSheet(ResourcePaths::getGuiPath().concatenate(L"window/window.css")) +

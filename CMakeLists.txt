@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.8)
 
 if (WIN32 AND (CMAKE_GENERATOR STREQUAL "Ninja"))
 	set(CMAKE_CONFIGURATION_TYPES ${CMAKE_BUILD_TYPE})
@@ -7,6 +7,7 @@ set(BUILD_CXX_LANGUAGE_PACKAGE OFF CACHE BOOL "Add C and C++ support to the Sour
 set(BUILD_JAVA_LANGUAGE_PACKAGE OFF CACHE BOOL "Add Java support to the Sourcetrail indexer.")
 set(BUILD_PYTHON_LANGUAGE_PACKAGE OFF CACHE BOOL "Add Python support to the Sourcetrail indexer.")
 set(DOCKER_BUILD OFF CACHE BOOL "Build runs in Docker")
+set(TREAT_WARNINGS_AS_ERRORS ON CACHE BOOL "Treat compiler warnings as errors")
 
 #set (CMAKE_VERBOSE_MAKEFILE ON)
 
@@ -86,6 +87,31 @@ endif()
 # FIXME: necessary to fix build in Docker
 if (DOCKER_BUILD)
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libstdc++")
+endif()
+
+if (TREAT_WARNINGS_AS_ERRORS)
+	if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+		# Visual Studio 2017 version 15.9 <= Version <= Visual Studio 2019 Version 16.4
+		if ((MSVC_VERSION GREATER_EQUAL 1916) AND (MSVC_VERSION LESS_EQUAL 1924))
+			# Warning 4003: not enough actual parameters for macro 'identifier'
+			# Warning 4250: 'class1' inherits 'class2::member' via dominance
+			set(WARNINGS_LIST "/wd4003 /wd4250")
+			set(CMAKE_CXX_WARNINGS_FLAGS "/experimental:external /external:anglebrackets /external:W0 /WX")
+			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_WARNINGS_FLAGS} ${WARNINGS_LIST}")
+
+			# Treat linker warnings as errors
+			set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /WX")
+			set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} /WX")
+			set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /WX")
+			set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} /WX")
+
+			message(STATUS "'Treat warnings as errors' policy is enabled")
+		else()
+			message(STATUS "'Treat warnings as errors' policy is disabled")
+		endif()
+	else()
+		message(STATUS "'Treat warnings as errors' policy is disabled")
+	endif()
 endif()
 
 # For debugging the release build on linux
@@ -723,10 +749,15 @@ create_source_groups(${TEST_FILES})
 
 target_link_libraries(
 	${TEST_PROJECT_NAME}
+	${LIB_GUI_PROJECT_NAME}
 	$<$<BOOL:${BUILD_CXX_LANGUAGE_PACKAGE}>:${LIB_CXX_PROJECT_NAME}>
 	$<$<BOOL:${BUILD_JAVA_LANGUAGE_PACKAGE}>:${LIB_JAVA_PROJECT_NAME}>
+	$<$<BOOL:${BUILD_PYTHON_LANGUAGE_PACKAGE}>:${LIB_PYTHON_PROJECT_NAME}>
 	${LIB_PROJECT_NAME}
 	${LIB_GUI_PROJECT_NAME}
+	$<$<BOOL:${BUILD_CXX_LANGUAGE_PACKAGE}>:${LIB_CXX_PROJECT_NAME}>
+	$<$<BOOL:${BUILD_JAVA_LANGUAGE_PACKAGE}>:${LIB_JAVA_PROJECT_NAME}>
+	$<$<BOOL:${BUILD_PYTHON_LANGUAGE_PACKAGE}>:${LIB_PYTHON_PROJECT_NAME}>
 )
 
 set_property(
@@ -742,10 +773,15 @@ set_property(
 		"${CMAKE_BINARY_DIR}/src/lib"
 		$<$<BOOL:${BUILD_CXX_LANGUAGE_PACKAGE}>:${LIB_CXX_INCLUDE_PATHS}>
 		$<$<BOOL:${BUILD_JAVA_LANGUAGE_PACKAGE}>:${LIB_JAVA_INCLUDE_PATHS}>
+		$<$<BOOL:${BUILD_PYTHON_LANGUAGE_PACKAGE}>:${LIB_PYTHON_INCLUDE_PATHS}>
 )
 
 if (WIN32)
 	set_target_properties(${TEST_PROJECT_NAME} PROPERTIES COMPILE_FLAGS "/bigobj")
+	set_property(
+		TARGET ${TEST_PROJECT_NAME} 
+			PROPERTY VS_DEBUGGER_WORKING_DIRECTORY 
+			"${CMAKE_SOURCE_DIR}/bin/test")
 endif ()
 
 
@@ -758,22 +794,13 @@ if (UNIX)
 		"${CMAKE_BINARY_DIR}/app/data")
 	execute_process(
 		COMMAND "${CMAKE_COMMAND}" "-E" "make_directory" "${CMAKE_BINARY_DIR}/app"
-		COMMAND "${CMAKE_COMMAND}"
-		"-E" "create_symlink"
-		"${CMAKE_SOURCE_DIR}/bin/app/data"
-		"${CMAKE_BINARY_DIR}/app/data"
-		COMMAND ${CMAKE_COMMAND}
-		"-E" "make_directory"
-		"${CMAKE_BINARY_DIR}/test"
-		COMMAND "${CMAKE_COMMAND}"
-		"-E" "create_symlink"
-		"${CMAKE_SOURCE_DIR}/bin/test/data"
-		"${CMAKE_BINARY_DIR}/test/data"
-		COMMAND "${CMAKE_COMMAND}"
-		"-E" "create_symlink"
-		"${CMAKE_SOURCE_DIR}/bin/app/user"
-		"${CMAKE_BINARY_DIR}/app/user"
-	)
+		COMMAND "${CMAKE_COMMAND}" "-E" "make_directory" "${CMAKE_BINARY_DIR}/test"
+		)
+	execute_process(
+		COMMAND "${CMAKE_COMMAND}" "-E" "create_symlink" "${CMAKE_SOURCE_DIR}/bin/app/data" "${CMAKE_BINARY_DIR}/app/data"
+		COMMAND "${CMAKE_COMMAND}" "-E" "create_symlink" "${CMAKE_SOURCE_DIR}/bin/app/user" "${CMAKE_BINARY_DIR}/app/user"
+		COMMAND "${CMAKE_COMMAND}" "-E" "create_symlink" "${CMAKE_SOURCE_DIR}/bin/test/data" "${CMAKE_BINARY_DIR}/test/data"
+	        )
 
 	if (UNIX AND NOT APPLE)
 		# Create different sized icons
